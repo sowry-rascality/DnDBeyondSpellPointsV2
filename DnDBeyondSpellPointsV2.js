@@ -262,7 +262,6 @@
       this.actionCastClick = this.actionCastClick.bind(this);
       this.cast = this.cast.bind(this);
       this.castClick = this.castClick.bind(this);
-      this.panelOpenClick = this.panelOpenClick.bind(this);
       this.recoverPoints = this.recoverPoints.bind(this);
       this.rest = this.rest.bind(this);
       this.setPoints = this.setPoints.bind(this);
@@ -271,14 +270,16 @@
       this._registerActionTabListeners = this._registerActionTabListeners.bind(this);
       this._registerRestConfirmListeners = this._registerRestConfirmListeners.bind(this);
       this._registerSpellTabListeners = this._registerSpellTabListeners.bind(this);
+      this._updateSidePanel = this._updateSidePanel.bind(this);
 
       // Register listeners
-      this.registerListeners();
+      this._registerListeners();
+      this._registerObservers();
       // Set the system status to loaded
       this._player.system().setLoaded();
     }
 
-    registerListeners() {
+    _registerListeners() {
       this._content.getElementsByClassName('ct-primary-box__tab--spells')[0].addEventListener('click', this._registerSpellTabListeners);
       this._content.getElementsByClassName('ct-primary-box__tab--actions')[0].addEventListener('click', this._registerActionTabListeners);
       this._content.querySelector('.ct-character-header-desktop__group--long-rest .ct-character-header-desktop__button').addEventListener('click', this._registerRestConfirmListeners);
@@ -286,12 +287,59 @@
       this._registerActionTabListeners();
     }
 
+    _registerObservers() {
+      this._sidebarObserver();
+    }
+
+    _sidebarObserver() {
+      let sidebar = document.querySelector('.ct-sidebar');
+      let prevState = sidebar.classList.contains('ct-sidebar--visible');
+
+      // Observe Toggle/Show/Hide.
+      const mutationObserver = new MutationObserver(mutations => {
+        mutations.forEach((mutation) => {
+          const { target } = mutation;
+          if (mutation.attributeName === 'class') {
+            const currentState = mutation.target.classList.contains('ct-sidebar--visible');
+            if (prevState !== currentState) {
+                prevState = currentState;
+                console.log(`'ct-sidebar--visible' class ${currentState ? 'added' : 'removed'}`);
+                if (currentState) {
+                  this._updateSidePanel();
+                  // Create observer for inner panel content.
+                  let sidebarPane = document.querySelector('.ct-sidebar .ct-sidebar__pane');
+                  if (sidebarPane) {
+                    const selectedSpellObserver = new MutationObserver(mutations => {
+                      mutations.forEach((mutation) => {
+                        const { target } = mutation;
+                        const spellDetail = target.querySelector('.ct-spell-detail');
+                        console.log("Check for spell detail?: ", mutation, spellDetail);
+                        if (spellDetail) {
+                          this._updateSidePanel();
+                        }
+                      });
+                    });
+                    selectedSpellObserver.observe(sidebarPane, {
+                      childList: true,
+                      subtree: true
+                    });
+                  }
+                }
+            }
+          }
+        });
+      });
+      mutationObserver.observe(sidebar, {
+        attributes: true,
+        attributeFilter: ['class']
+      });
+    }
+
     actionCastClick(evt) {
       console.log('checking actions');
       setTimeout(() => {
         [...this._content.getElementsByClassName('ddbc-combat-attack--spell')].filter(ele => !ele.evtFlag).forEach(ele => {
           ele.evtFlag = true;
-          ele.addEventListener('click', this.panelOpenClick);
         });
       }, 10);
     }
@@ -324,37 +372,33 @@
             });
             [...el.getElementsByClassName('ct-spells-spell')].filter(ele => !ele.evtFlag).forEach(ele => {
               ele.evtFlag = true;
-              ele.addEventListener('click', this.panelOpenClick);
             });
           }
         });
       }, 10);
     }
 
-    panelOpenClick(evt) {
-      console.log('opened panel');
-      setTimeout(() => {
-        const spDetail = document.getElementsByClassName('ct-spell-detail')[0];
-        if (spDetail != null) {
-          const spCast = spDetail.querySelector('.ct-spell-caster__casting-action > button');
-          spCast.innerHTML = spCast.innerHTML.replace('Spell Slot', 'Spell Points');
-          const spLvl = spDetail.getElementsByClassName('ct-spell-caster__casting-level-current')[0];
-          const spCost = spDetail.getElementsByClassName('ct-spell-caster__casting-action-count--spellcasting')[0];
-          console.log('spell level:', spLvl.innerText[0]);
-          spCast.spLvl = spLvl.innerText[0];
-          spCost.innerText = SPELL_COST_TABLE[+spCast.spLvl - 1][1];
-          spCast.addEventListener('click', evt => this.cast(+spCast.spLvl)(evt));
-          [...spDetail.getElementsByClassName('ct-spell-caster__casting-level-action')].forEach(ele => {
-            ele.addEventListener('click', evt => {
-              setTimeout(() => {
-                console.log('spell level:', spLvl.innerText[0]);
-                spCast.spLvl = spLvl.innerText[0];
-                spCost.innerText = SPELL_COST_TABLE[+spCast.spLvl - 1][1];
-              }, 10);
-            });
+    _updateSidePanel() {
+      const spDetail = document.getElementsByClassName('ct-spell-detail')[0];
+      if (spDetail != null) {
+        const spCast = spDetail.querySelector('.ct-spell-caster__casting-action > button');
+        spCast.innerHTML = spCast.innerHTML.replace('Spell Slot', 'Spell Points');
+        const spLvl = spDetail.getElementsByClassName('ct-spell-caster__casting-level-current')[0];
+        const spCost = spDetail.getElementsByClassName('ct-spell-caster__casting-action-count--spellcasting')[0];
+        console.log('spell level:', spLvl.innerText[0]);
+        spCast.spLvl = spLvl.innerText[0];
+        spCost.innerText = SPELL_COST_TABLE[+spCast.spLvl - 1][1];
+        spCast.addEventListener('click', evt => this.cast(+spCast.spLvl)(evt));
+        [...spDetail.getElementsByClassName('ct-spell-caster__casting-level-action')].forEach(ele => {
+          ele.addEventListener('click', evt => {
+            setTimeout(() => {
+              console.log('spell level:', spLvl.innerText[0]);
+              spCast.spLvl = spLvl.innerText[0];
+              spCost.innerText = SPELL_COST_TABLE[+spCast.spLvl - 1][1];
+            }, 10);
           });
-        }
-      }, 50);
+        });
+      }
     }
 
     recoverPoints(val) {
@@ -398,7 +442,12 @@
 
     _registerRestConfirmListeners(evt) {
       setTimeout(() => {
-        document.querySelector('.ct-reset-pane__action .ct-button--confirm').addEventListener('click', this.rest);
+        const longRestButton = document.querySelector('.ct-reset-pane__action .ct-button--confirm');
+        longRestButton.addEventListener('click', () => {
+          if (longRestButton.classList.contains('ct-button--is-confirming')) {
+            this.rest();
+          }
+        });
       }, 50);
     };
 
