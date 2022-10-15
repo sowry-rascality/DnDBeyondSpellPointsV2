@@ -249,14 +249,17 @@
   };
 
   class SpellPoints__Page_Sheet {
+    _content = null;
     _sheet = null;
     _player = null;
+    platform = "desktop";
 
-    constructor(content, sheet, player) {
+    constructor(content, sheet, player, platform = "desktop") {
       console.log('Spell point tracker active');
       this._content = content;
       this._sheet = sheet;
       this._player = player;
+      this.platform = platform;
 
       // Bind functions
       this.actionCastClick = this.actionCastClick.bind(this);
@@ -280,11 +283,26 @@
     }
 
     _registerListeners() {
-      this._content.getElementsByClassName('ct-primary-box__tab--spells')[0].addEventListener('click', this._registerSpellTabListeners);
-      this._content.getElementsByClassName('ct-primary-box__tab--actions')[0].addEventListener('click', this._registerActionTabListeners);
-      this._content.querySelector('.ct-character-header-desktop__group--long-rest .ct-character-header-desktop__button').addEventListener('click', this._registerRestConfirmListeners);
-
-      this._registerActionTabListeners();
+      if (this.platform === "desktop") {
+        this._content.getElementsByClassName('ct-primary-box__tab--spells')[0].addEventListener('click', () => this._registerSpellTabListeners());
+        this._content.getElementsByClassName('ct-primary-box__tab--actions')[0].addEventListener('click', () => this._registerActionTabListeners());
+        this._registerActionTabListeners();
+      } else if (this.platform === "tablet" || this.platform === "mobile") {
+        const activePage = this._content.querySelector('.ct-component-carousel__active');
+        const mutationObserver = new MutationObserver(mutations => {
+          mutations.forEach((mutation) => {
+            const { target } = mutation;
+            if (target.querySelector(`.ct-spells-${this.platform}`)) {
+              this._renderSpellPointCounter();
+            }
+          });
+        });
+        mutationObserver.observe(activePage, {
+          childList: true
+        });
+      } else {
+        console.log(`Error: Unkown platform ${this.platform}`);
+      }
     }
 
     _registerObservers() {
@@ -316,6 +334,10 @@
                         console.log("Check for spell detail?: ", mutation, spellDetail);
                         if (spellDetail) {
                           this._updateSidePanel();
+                        }
+                        const resetPane = target.querySelector('.ct-reset-pane');
+                        if (resetPane) {
+                          this._registerRestConfirmListeners();
                         }
                       });
                     });
@@ -354,7 +376,7 @@
       };
     }
 
-    castClick(evt) {
+    castClick() {
       console.log('checking levels');
       setTimeout(() => {
         [...this._content.getElementsByClassName('ct-content-group')].forEach(el => {
@@ -382,6 +404,7 @@
       const spDetail = document.getElementsByClassName('ct-spell-detail')[0];
       if (spDetail != null) {
         const spCast = spDetail.querySelector('.ct-spell-caster__casting-action > button');
+        if (spCast == null) return;
         spCast.innerHTML = spCast.innerHTML.replace('Spell Slot', 'Spell Points');
         const spLvl = spDetail.getElementsByClassName('ct-spell-caster__casting-level-current')[0];
         const spCost = spDetail.getElementsByClassName('ct-spell-caster__casting-action-count--spellcasting')[0];
@@ -451,16 +474,18 @@
       }, 50);
     };
 
-    _registerSpellTabListeners(evt) {
+    _registerSpellTabListeners() {
       console.log('clicked spells');
       setTimeout(() => {
-        this._renderSpellPointCounter(evt);
+        this._renderSpellPointCounter();
       }, 50);
     };
 
-    _renderSpellPointCounter(evt) {
+    _renderSpellPointCounter() {
+      if (this._content.querySelector('.spell-point-counter') != null) return;
       let tmp = this._content.getElementsByClassName('ct-spells-level-casting__info-group')[2];
       let pdc = tmp.cloneNode(true);
+      pdc.childNodes[1].classList.add('spell-point-counter');
       pdc.childNodes[1].innerText = 'Spell Points';
       pdc.childNodes[0].childNodes[0].innerText = '';
       let pdSub = document.createElement('span');
@@ -493,9 +518,9 @@
       });
       pdc.childNodes[0].childNodes[0].appendChild(pdAdd);
       tmp.parentNode.appendChild(pdc);
-      [...this._content.querySelectorAll('.ct-spells__content .ddbc-tab-options__header')].forEach(ele => ele.addEventListener('click', this.castClick));
-      this._content.getElementsByClassName('ct-spells-filter__input')[0].addEventListener('input', this.castClick);
-      this.castClick(evt);
+      [...this._content.querySelectorAll('.ct-spells__content .ddbc-tab-options__header')].forEach(ele => ele.addEventListener('click', () => this.castClick()));
+      this._content.getElementsByClassName('ct-spells-filter__input')[0].addEventListener('input', () => this.castClick());
+      this.castClick();
     }
 
     _renderPointsDisplay() {
@@ -613,6 +638,12 @@
       } else if (/\/builder/.test(window.location.pathname)) {
         console.log("SpellPoints__PageReader", content);
         return new SpellPoints__Page_Editor(content, this._player);
+      } else if ([...content.getElementsByClassName('ct-character-header-tablet')].length) {
+        if (!this._player.system().useSpellPoints) {return;}
+        return new SpellPoints__Page_Sheet(content, sheet, this._player, "tablet");
+      } else if ([...content.getElementsByClassName('ct-character-header-mobile')].length) {
+        if (!this._player.system().useSpellPoints) {return;}
+        return new SpellPoints__Page_Sheet(content, sheet, this._player, "mobile");
       } else {
         if (this._player.system().loaded-- > 0) {
           console.log('attempting to load point tracker...');
