@@ -88,7 +88,6 @@
     }
 
     _fetchData(path, obj) {
-      console.log('data call to', path);
       obj.headers = this._buildRequestHeader(obj);
       if (obj.body) {obj.body = JSON.stringify(obj.body);}
       return fetch('https://character-service.dndbeyond.com/character/v5/' + path, obj).then(resp => resp.json()).then(data => data.data).catch(error => console.error(error));
@@ -111,7 +110,6 @@
     }
 
     init(spSystem) {
-      console.log("SpellPoints__System.init", spSystem);
       this.spSystem = spSystem;
       this.useSpellPoints = spSystem?.isProficient === true;
       this.mergeSorcPoints = spSystem?.isMartialArts === true;
@@ -158,7 +156,6 @@
 
     loadCharacter() {
       return this._session.getData('character/' + player.id, {}).then((data) => {
-        console.log("SpellPoints__Player.loadCharacter", data);
         this.data = data;
         // Load the spell point system.
         let spSystem = (data?.customActions || []).find(act => act.name === 'Spell Points');
@@ -194,7 +191,6 @@
       this.points = val;
       const tmp = Object.assign(this._system.spSystem, {characterId: + this.id, fixedValue: (this.maxPoints - this.points) || null});
       this._session.getData('custom/action', {method: 'PUT', body: tmp}).then((data) => {
-        console.log('updated spell point action');
         this._system.spSystem.fixedValue = tmp.fixedValue;
       });
     }
@@ -321,7 +317,6 @@
             const currentState = mutation.target.classList.contains('ct-sidebar--visible');
             if (prevState !== currentState) {
                 prevState = currentState;
-                console.log(`'ct-sidebar--visible' class ${currentState ? 'added' : 'removed'}`);
                 if (currentState) {
                   this._updateSidePanel();
                   // Create observer for inner panel content.
@@ -331,7 +326,6 @@
                       mutations.forEach((mutation) => {
                         const { target } = mutation;
                         const spellDetail = target.querySelector('.ct-spell-detail');
-                        console.log("Check for spell detail?: ", mutation, spellDetail);
                         if (spellDetail) {
                           this._updateSidePanel();
                         }
@@ -358,7 +352,6 @@
     }
 
     actionCastClick(evt) {
-      console.log('checking actions');
       setTimeout(() => {
         [...this._content.getElementsByClassName('ddbc-combat-attack--spell')].filter(ele => !ele.evtFlag).forEach(ele => {
           ele.evtFlag = true;
@@ -377,12 +370,10 @@
     }
 
     castClick() {
-      console.log('checking levels');
       setTimeout(() => {
         [...this._content.getElementsByClassName('ct-content-group')].forEach(el => {
           if (!/^CANTRIP/.test(el.innerText)) {
             const level = +el.innerText[0];
-            console.log('level', level);
             const lvl = el.querySelector('.ct-content-group__header-content');
             if (!lvl.spFlag){
               lvl.spFlag = true;
@@ -408,14 +399,12 @@
         spCast.innerHTML = spCast.innerHTML.replace('Spell Slot', 'Spell Points');
         const spLvl = spDetail.getElementsByClassName('ct-spell-caster__casting-level-current')[0];
         const spCost = spDetail.getElementsByClassName('ct-spell-caster__casting-action-count--spellcasting')[0];
-        console.log('spell level:', spLvl.innerText[0]);
         spCast.spLvl = spLvl.innerText[0];
         spCost.innerText = SPELL_COST_TABLE[+spCast.spLvl - 1][1];
         spCast.addEventListener('click', evt => this.cast(+spCast.spLvl)(evt));
         [...spDetail.getElementsByClassName('ct-spell-caster__casting-level-action')].forEach(ele => {
           ele.addEventListener('click', evt => {
             setTimeout(() => {
-              console.log('spell level:', spLvl.innerText[0]);
               spCast.spLvl = spLvl.innerText[0];
               spCost.innerText = SPELL_COST_TABLE[+spCast.spLvl - 1][1];
             }, 10);
@@ -456,7 +445,6 @@
     }
 
     _registerActionTabListeners(evt) {
-      console.log('clicked actions');
       setTimeout(() => {
         [...this._content.querySelectorAll('.ct-actions__content .ddbc-tab-options__header')].forEach(ele => ele.addEventListener('click', this.actionCastClick));
         this.actionCastClick(evt);
@@ -475,7 +463,6 @@
     };
 
     _registerSpellTabListeners() {
-      console.log('clicked spells');
       setTimeout(() => {
         this._renderSpellPointCounter();
       }, 50);
@@ -533,7 +520,6 @@
     _content = null;
 
     constructor(content, player) {
-      console.log('Spell point tracker watching builder', content);
       this._content = content;
       this._player = player;
 
@@ -621,22 +607,18 @@
     _player = null;
 
     constructor(player) {
-      console.log("SpellPoints__PageReader", player);
       this._player = player;
       this.read = this.read.bind(this);
-      console.log("SpellPoints__PageReader", this._player.system());
     }
 
     read() {
       const content = document.getElementById('character-tools-target');
       if (!content) {return null;}
       const sheet = [...content.getElementsByClassName('ct-character-header-desktop')].length;
-      console.log("SpellPoints__PageReader.read", this._player.system());
       if (sheet) {
         if (!this._player.system().useSpellPoints) {return;}
         return new SpellPoints__Page_Sheet(content, sheet, this._player);
       } else if (/\/builder/.test(window.location.pathname)) {
-        console.log("SpellPoints__PageReader", content);
         return new SpellPoints__Page_Editor(content, this._player);
       } else if ([...content.getElementsByClassName('ct-character-header-tablet')].length) {
         if (!this._player.system().useSpellPoints) {return;}
