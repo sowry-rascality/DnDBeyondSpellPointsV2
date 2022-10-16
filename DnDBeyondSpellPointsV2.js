@@ -13,16 +13,59 @@
 (() => {
   'use strict';
 
+  const styles = `
+    .spell-points__notification {
+      z-index: 1400;
+      position: fixed;
+      display: flex;
+      left: 8px;
+      right: 8px;
+      -moz-box-pack: center;
+      justify-content: center;
+      -moz-box-align: center;
+      align-items: center;
+      bottom: 8px;
+    }
+
+    @media all and (min-width: 600px) {
+      .spell-points__notification {
+        bottom: 24px;
+        left: 50%;
+        right: auto;
+        transform: translateX(-50%);
+      }
+    }
+
+    .spell-points__notification .MuiAlert-icon {
+      margin-right: 12px;
+      padding: 7px 0px;
+      display: flex;
+      font-size: 22px;
+      opacity: 0.9;
+    }
+
+    .spell-points__notification .MuiAlert-message {
+      padding: 8px 0px;
+      min-width: 0px;
+      overflow: auto;
+    }
+
+    .spell-points__notification .MuiAlert-action {
+      display: flex;
+      align-items: flex-start;
+      padding: 4px 0px 0px 16px;
+      margin-left: auto;
+      margin-right: -8px;
+    }
+  `;
+
   var cssId = 'DnDBeyondSpellPointsV2';  // you could encode the css path itself to generate id..
   if (!document.getElementById(cssId))
   {
       var head  = document.getElementsByTagName('head')[0];
-      var link  = document.createElement('link');
-      link.id   = cssId;
-      link.rel  = 'stylesheet';
-      link.type = 'text/css';
-      link.href = 'https://raw.githubusercontent.com/sowry-rascality/DnDBeyondSpellPointsV2/main/DnDBeyondSpellPointsV2.css';
-      link.media = 'all';
+      var style  = document.createElement('style');
+      style.id   = cssId;
+      style.href = styles;
       head.appendChild(link);
   }
 
