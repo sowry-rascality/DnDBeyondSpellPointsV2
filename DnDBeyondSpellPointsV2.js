@@ -66,7 +66,7 @@
       var style  = document.createElement('style');
       style.id   = cssId;
       style.href = styles;
-      head.appendChild(link);
+      head.appendChild(style);
   }
 
   const SPELL_POINTS_TABLE = [
