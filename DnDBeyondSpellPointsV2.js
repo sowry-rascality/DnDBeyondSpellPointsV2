@@ -36,6 +36,24 @@
       }
     }
 
+    .spell-points__notification .MuiPaper-root {
+      transition: box-shadow 300ms cubic-bezier(0.4, 0, 0.2, 1) 0ms;
+      border-radius: 4px;
+      box-shadow: rgba(0, 0, 0, 0.2) 0px 3px 5px -1px, rgba(0, 0, 0, 0.14) 0px 6px 10px 0px, rgba(0, 0, 0, 0.12) 0px 1px 18px 0px;
+      font-size: 14px;
+      font-family: Roboto;
+      font-weight: 500;
+      font-style: normal;
+      font-stretch: normal;
+      letter-spacing: 0.15px;
+      line-height: 20.02px;
+      background-color: rgb(76, 175, 80);
+      display: flex;
+      padding: 6px 16px;
+      color: rgba(0, 0, 0, 0.87);
+      width: 100%;
+    }
+
     .spell-points__notification .MuiAlert-icon {
       margin-right: 12px;
       padding: 7px 0px;
@@ -44,10 +62,32 @@
       opacity: 0.9;
     }
 
+    .spell-points__notification .MuiAlert-icon .MuiSvgIcon-root {
+      user-select: none;
+      width: 1em;
+      height: 1em;
+      display: inline-block;
+      fill: currentcolor;
+      flex-shrink: 0;
+      transition: fill 200ms cubic-bezier(0.4, 0, 0.2, 1) 0ms;
+      font-size: inherit;
+    }
+
     .spell-points__notification .MuiAlert-message {
       padding: 8px 0px;
       min-width: 0px;
       overflow: auto;
+    }
+
+    .spell-points__notification .MuiAlert-message .MuiTypography-root {
+      margin: -2px 0px 0.35em;
+      font-size: 16px;
+      font-family: Roboto;
+      font-style: normal;
+      font-stretch: normal;
+      letter-spacing: 0.15px;
+      line-height: 24px;
+      font-weight: 500;
     }
 
     .spell-points__notification .MuiAlert-action {
@@ -57,6 +97,44 @@
       margin-left: auto;
       margin-right: -8px;
     }
+
+    .spell-points__notification .MuiAlert-action .MuiButtonBase-root {
+      display: inline-flex;
+      -moz-box-align: center;
+      align-items: center;
+      -moz-box-pack: center;
+      justify-content: center;
+      position: relative;
+      box-sizing: border-box;
+      background-color: transparent;
+      outline: currentcolor none 0px;
+      border: 0px none;
+      margin: 0px;
+      cursor: pointer;
+      user-select: none;
+      vertical-align: middle;
+      appearance: none;
+      text-decoration: none;
+      text-align: center;
+      flex: 0 0 auto;
+      border-radius: 50%;
+      overflow: visible;
+      color: inherit;
+      padding: 5px;
+      font-size: 1.125rem;
+      transition: none 0s ease 0s;
+    }
+
+    .spell-points__notification .MuiAlert-action .MuiSvgIcon-root {
+      user-select: none;
+      width: 1em;
+      height: 1em;
+      display: inline-block;
+      fill: currentcolor;
+      flex-shrink: 0;
+      transition: fill 200ms cubic-bezier(0.4, 0, 0.2, 1) 0ms;
+      font-size: 1.25rem;
+    }
   `;
 
   var cssId = 'DnDBeyondSpellPointsV2';  // you could encode the css path itself to generate id..
@@ -65,7 +143,7 @@
       var head  = document.getElementsByTagName('head')[0];
       var style  = document.createElement('style');
       style.id   = cssId;
-      style.href = styles;
+      style.innerText = styles;
       head.appendChild(style);
   }
 
@@ -282,18 +360,25 @@
     spellName = '';
     spellLevel = '';
     spellPoints = '';
+    notificationTimeout = null;
 
-    constructor(spellName, spellLevel, spellPoints) {
+    constructor() {}
+
+    notifyCastSpell(spellName, spellLevel, spellPoints) {
       this.spellName = spellName;
       this.spellLevel = spellLevel;
       this.spellPoints = spellPoints;
-    }
-
-    notifyCastSpell() {
       let notification = this.buildNotification();
       let notificationPortal = document.querySelector('.ct-notification__portal');
       if (notificationPortal) {
         notificationPortal.innerHTML = notification;
+        notificationPortal.querySelector('.MuiAlert-action').addEventListener('click', () => {
+          notificationPortal.innerHTML = '';
+        });
+        clearTimeout(this.notificationTimeout);
+        this.notificationTimeout = setTimeout(() => {
+          notificationPortal.innerHTML = '';
+        }, 2000)
       }
     }
 
@@ -424,8 +509,7 @@
       return evt => {
         if (this.spendPoints(cost)){
           console.log('cast level', level, 'spell with', cost, 'points');
-          const notification = new SpellPoints__SpellCastNotification(name, level, cost);
-          notification.notifyCastSpell();
+          spellCastNotification.notifyCastSpell(name, level, cost);
         }
         if (!SPELL_COST_TABLE[level - 1][2]) {evt.stopPropagation();}
       };
@@ -704,6 +788,7 @@
     }
   }
 
+  const spellCastNotification = new SpellPoints__SpellCastNotification();
   const player = new SpellPoints__Player();
   const reader = new SpellPoints__PageReader(player);
 
