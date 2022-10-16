@@ -12,6 +12,20 @@
 
 (() => {
   'use strict';
+
+  var cssId = 'DnDBeyondSpellPointsV2';  // you could encode the css path itself to generate id..
+  if (!document.getElementById(cssId))
+  {
+      var head  = document.getElementsByTagName('head')[0];
+      var link  = document.createElement('link');
+      link.id   = cssId;
+      link.rel  = 'stylesheet';
+      link.type = 'text/css';
+      link.href = 'https://raw.githubusercontent.com/sowry-rascality/DnDBeyondSpellPointsV2/main/DnDBeyondSpellPointsV2.css';
+      link.media = 'all';
+      head.appendChild(link);
+  }
+
   const SPELL_POINTS_TABLE = [
     // Class Level, Sorc Points, Spell Points, Max Slot Level
     [1,0,4,1],
@@ -234,12 +248,15 @@
 
     notifyCastSpell() {
       let notification = this.buildNotification();
-
+      let notificationPortal = document.querySelector('.ct-notification__portal');
+      if (notificationPortal) {
+        notificationPortal.innerHTML = notification;
+      }
     }
 
     buildNotification() {
       return (
-        `<div class="MuiSnackbar-root MuiSnackbar-anchorOriginBottomCenter mui-1ozswge" role="presentation"><div class="MuiPaper-root MuiPaper-elevation MuiPaper-rounded MuiPaper-elevation6 MuiAlert-root MuiAlert-filledSuccess MuiAlert-filled mui-19dc6ow" role="alert" style="opacity: 1; transform: none; transition: opacity 225ms cubic-bezier(0.4, 0, 0.2, 1) 0ms, transform 150ms cubic-bezier(0.4, 0, 0.2, 1) 0ms;" direction="up"><div class="MuiAlert-icon mui-1l54tgj"><svg class="MuiSvgIcon-root MuiSvgIcon-fontSizeInherit mui-1cw4hi4" focusable="false" aria-hidden="true" viewBox="0 0 24 24" data-testid="SuccessOutlinedIcon"><path d="M20,12A8,8 0 0,1 12,20A8,8 0 0,1 4,12A8,8 0 0,1 12,4C12.76,4 13.5,4.11 14.2, 4.31L15.77,2.74C14.61,2.26 13.34,2 12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0, 0 22,12M7.91,10.08L6.5,11.5L11,16L21,6L19.59,4.58L11,13.17L7.91,10.08Z"></path></svg></div><div class="MuiAlert-message mui-1xsto0d"><div class="MuiTypography-root MuiTypography-body1 MuiTypography-gutterBottom MuiAlertTitle-root mui-5cgd4k">Spell Cast</div>Cast ${this.spellName} at level ${this.spellLevel} (-${this.spellPoints} spell points)</div><div class="MuiAlert-action mui-1mzcepu"><button class="MuiButtonBase-root MuiIconButton-root MuiIconButton-colorInherit MuiIconButton-sizeSmall mui-a26yix" tabindex="0" type="button" aria-label="Close" title="Close"><svg class="MuiSvgIcon-root MuiSvgIcon-fontSizeSmall mui-1k33q06" focusable="false" aria-hidden="true" viewBox="0 0 24 24" data-testid="CloseIcon"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"></path></svg></button></div></div></div>`
+        `<div class="spell-points__notification MuiSnackbar-root MuiSnackbar-anchorOriginBottomCenter mui-1ozswge" role="presentation"><div class="MuiPaper-root MuiPaper-elevation MuiPaper-rounded MuiPaper-elevation6 MuiAlert-root MuiAlert-filledSuccess MuiAlert-filled mui-19dc6ow" role="alert" style="opacity: 1; transform: none; transition: opacity 225ms cubic-bezier(0.4, 0, 0.2, 1) 0ms, transform 150ms cubic-bezier(0.4, 0, 0.2, 1) 0ms;" direction="up"><div class="MuiAlert-icon mui-1l54tgj"><svg class="MuiSvgIcon-root MuiSvgIcon-fontSizeInherit mui-1cw4hi4" focusable="false" aria-hidden="true" viewBox="0 0 24 24" data-testid="SuccessOutlinedIcon"><path d="M20,12A8,8 0 0,1 12,20A8,8 0 0,1 4,12A8,8 0 0,1 12,4C12.76,4 13.5,4.11 14.2, 4.31L15.77,2.74C14.61,2.26 13.34,2 12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0, 0 22,12M7.91,10.08L6.5,11.5L11,16L21,6L19.59,4.58L11,13.17L7.91,10.08Z"></path></svg></div><div class="MuiAlert-message mui-1xsto0d"><div class="MuiTypography-root MuiTypography-body1 MuiTypography-gutterBottom MuiAlertTitle-root mui-5cgd4k">Spell Cast</div>Cast ${this.spellName} at level ${this.spellLevel} (-${this.spellPoints} spell points)</div><div class="MuiAlert-action mui-1mzcepu"><button class="MuiButtonBase-root MuiIconButton-root MuiIconButton-colorInherit MuiIconButton-sizeSmall mui-a26yix" tabindex="0" type="button" aria-label="Close" title="Close"><svg class="MuiSvgIcon-root MuiSvgIcon-fontSizeSmall mui-1k33q06" focusable="false" aria-hidden="true" viewBox="0 0 24 24" data-testid="CloseIcon"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"></path></svg></button></div></div></div>`
       )
     }
   };
@@ -359,11 +376,13 @@
       }, 10);
     }
 
-    cast(level) {
+    cast(name, level) {
       const cost = SPELL_COST_TABLE[level - 1][1];
       return evt => {
         if (this.spendPoints(cost)){
           console.log('cast level', level, 'spell with', cost, 'points');
+          const notification = new SpellPoints__SpellCastNotification(name, level, cost);
+          notification.notifyCastSpell();
         }
         if (!SPELL_COST_TABLE[level - 1][2]) {evt.stopPropagation();}
       };
@@ -381,7 +400,8 @@
             }
             [...el.getElementsByClassName('ddbc-button')].filter(ele => /CAST$/.test(ele.innerText) && !ele.evtFlag).forEach(ele => {
               ele.evtFlag = true;
-              ele.addEventListener('click', this.cast(level));
+              let spellName = ele.parentNode.parentNode.querySelector('.ddbc-spell-name').innerHTML;
+              ele.addEventListener('click', this.cast(spellName, level));
             });
             [...el.getElementsByClassName('ct-spells-spell')].filter(ele => !ele.evtFlag).forEach(ele => {
               ele.evtFlag = true;
@@ -395,13 +415,14 @@
       const spDetail = document.getElementsByClassName('ct-spell-detail')[0];
       if (spDetail != null) {
         const spCast = spDetail.querySelector('.ct-spell-caster__casting-action > button');
-        if (spCast == null) return;
+        if (spCast == null || spCast.innerHTML.includes('Spell Points')) return;
+        const spellName = document.querySelector('.ct-spell-pane .ddbc-spell-name').innerHTML;
         spCast.innerHTML = spCast.innerHTML.replace('Spell Slot', 'Spell Points');
         const spLvl = spDetail.getElementsByClassName('ct-spell-caster__casting-level-current')[0];
         const spCost = spDetail.getElementsByClassName('ct-spell-caster__casting-action-count--spellcasting')[0];
         spCast.spLvl = spLvl.innerText[0];
         spCost.innerText = SPELL_COST_TABLE[+spCast.spLvl - 1][1];
-        spCast.addEventListener('click', evt => this.cast(+spCast.spLvl)(evt));
+        spCast.addEventListener('click', evt => this.cast(spellName, +spCast.spLvl)(evt));
         [...spDetail.getElementsByClassName('ct-spell-caster__casting-level-action')].forEach(ele => {
           ele.addEventListener('click', evt => {
             setTimeout(() => {
