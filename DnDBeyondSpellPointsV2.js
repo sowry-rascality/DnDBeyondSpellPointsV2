@@ -266,6 +266,7 @@
     maxPoints = 0;
     maxSpellLevel = 0;
     data = null;
+    pageSheet = null;
     _session = null;
     _system = null;
 
@@ -299,6 +300,7 @@
         this._setCasterLevel(); // Order is important. We need caster level first.
       	this._setMaxSpellPoints(); // Set max Spell points second (as spell points needs it).
         this._setSpellPoints();
+        this._setMaxSpellLevel();
       });
     }
 
@@ -321,6 +323,20 @@
       return this.setPoints(this.points + cost);
     }
 
+    remainingPoints() {
+      return Math.max((this.maxPoints - this.points), 0);
+    }
+
+    wizardLevels() {
+      for (let i = 0; i < this.data.classes.length; i++) {
+        const cl = this.data.classes[i];
+        if (cl.definition != null && cl.definition.id === 8) { // wizard id.
+          return cl.level || 1;
+        }
+      }
+      return 0;
+    }
+
     _updatePoints(val) {
       val = Math.max(Math.min(val, this.maxPoints), 0);
       this.points = val;
@@ -328,6 +344,7 @@
       this._session.getData('custom/action', {method: 'PUT', body: tmp}).then((data) => {
         this._system.spSystem.fixedValue = tmp.fixedValue;
       });
+      this._updateCastButtons();
     }
 
     _setCasterLevel() {
@@ -354,6 +371,12 @@
     _setMaxSpellLevel() {
       this.maxSpellLevel = SPELL_POINTS_TABLE[this.level - 1][3];
     }
+
+    _updateCastButtons() {
+      if (this.pageSheet != null) {
+        this.pageSheet.updateCastButtons();
+      }
+    }
   }
 
   class SpellPoints__SpellCastNotification {
@@ -371,11 +394,11 @@
       let notification = this.buildNotification();
       let notificationPortal = document.querySelector('.ct-notification__portal');
       if (notificationPortal) {
+        clearTimeout(this.notificationTimeout);
         notificationPortal.innerHTML = notification;
         notificationPortal.querySelector('.MuiAlert-action').addEventListener('click', () => {
           notificationPortal.innerHTML = '';
         });
-        clearTimeout(this.notificationTimeout);
         this.notificationTimeout = setTimeout(() => {
           notificationPortal.innerHTML = '';
         }, 2000)
@@ -420,6 +443,7 @@
       this._registerListeners();
       this._registerObservers();
       // Set the system status to loaded
+      this._player.pageSheet = this;
       this._player.system().setLoaded();
     }
 
@@ -520,41 +544,77 @@
         [...this._content.getElementsByClassName('ct-content-group')].forEach(el => {
           if (!/^CANTRIP/.test(el.innerText)) {
             const level = +el.innerText[0];
+            const cost = SPELL_COST_TABLE[level - 1][1];
             const lvl = el.querySelector('.ct-content-group__header-content');
+            const spellDisabled = cost > this._player.points;
             if (!lvl.spFlag){
               lvl.spFlag = true;
-              lvl.innerText += ' (Cost ' + SPELL_COST_TABLE[level - 1][1] + ')';
+              lvl.innerText += ' (Cost ' + cost + ')';
             }
-            [...el.getElementsByClassName('ddbc-button')].filter(ele => /CAST$/.test(ele.innerText) && !ele.evtFlag).forEach(ele => {
+            let elements = [...el.getElementsByClassName('ddbc-button')].filter(ele => /CAST$/.test(ele.innerText));
+            // only assign listeners once.
+            elements.filter(ele => !ele.evtFlag).forEach(ele => {
               ele.evtFlag = true;
               let spellName = ele.parentNode.parentNode.querySelector('.ddbc-spell-name').innerHTML;
               ele.addEventListener('click', this.cast(spellName, level));
             });
-            [...el.getElementsByClassName('ct-spells-spell')].filter(ele => !ele.evtFlag).forEach(ele => {
-              ele.evtFlag = true;
+            // setup the state of all buttons
+            elements.forEach(ele => {
+              ele.disabled = spellDisabled
             });
           }
         });
       }, 10);
     }
 
+    updateCastButtons() {
+      // Update Spells Tab / Page.
+      [...this._content.getElementsByClassName('ct-content-group')].forEach(el => {
+        if (!/^CANTRIP/.test(el.innerText)) {
+          const level = +el.innerText[0];
+          const cost = SPELL_COST_TABLE[level - 1][1];
+          const lvl = el.querySelector('.ct-content-group__header-content');
+          const spellDisabled = cost > this._player.points;
+          [...el.getElementsByClassName('ddbc-button')].filter(ele => /CAST$/.test(ele.innerText)).forEach(ele => {
+            ele.disabled = spellDisabled
+          });
+        }
+      });
+      // Update Spell sidebar casting.
+      const spDetail = document.getElementsByClassName('ct-spell-detail')[0];
+      if (spDetail == null) return;
+      const spCast = spDetail.querySelector('.ct-spell-caster__casting-action > button');
+      if (spCast == null) return;
+      const spLvl = spDetail.getElementsByClassName('ct-spell-caster__casting-level-current')[0];
+      const spCost = spDetail.getElementsByClassName('ct-spell-caster__casting-action-count--spellcasting')[0];
+      spCast.spLvl = spLvl.innerText[0];
+      let spellCost = SPELL_COST_TABLE[+spCast.spLvl - 1][1];
+      spCast.disabled = spellCost > this._player.remainingPoints();
+    }
+
     _updateSidePanel() {
       const spDetail = document.getElementsByClassName('ct-spell-detail')[0];
       if (spDetail != null) {
         const spCast = spDetail.querySelector('.ct-spell-caster__casting-action > button');
-        if (spCast == null || spCast.innerHTML.includes('Spell Points')) return;
-        const spellName = document.querySelector('.ct-spell-pane .ddbc-spell-name').innerHTML;
-        spCast.innerHTML = spCast.innerHTML.replace('Spell Slot', 'Spell Points');
+        if (spCast == null) return;
         const spLvl = spDetail.getElementsByClassName('ct-spell-caster__casting-level-current')[0];
         const spCost = spDetail.getElementsByClassName('ct-spell-caster__casting-action-count--spellcasting')[0];
         spCast.spLvl = spLvl.innerText[0];
-        spCost.innerText = SPELL_COST_TABLE[+spCast.spLvl - 1][1];
+        let spellCost = SPELL_COST_TABLE[+spCast.spLvl - 1][1];
+        const spellName = document.querySelector('.ct-spell-pane .ddbc-spell-name').innerHTML;
+        spCost.innerText = spellCost;
+        spCast.disabled = spellCost > this._player.remainingPoints();
+        if (spCast.innerHTML.includes('Spell Points')) return; // Assume we have already assigned a listener.
+        spCast.innerHTML = spCast.innerHTML.replace('Spell Slot', 'Spell Points');
         spCast.addEventListener('click', evt => this.cast(spellName, +spCast.spLvl)(evt));
         [...spDetail.getElementsByClassName('ct-spell-caster__casting-level-action')].forEach(ele => {
           ele.addEventListener('click', evt => {
             setTimeout(() => {
+              let spCostEl = spDetail.getElementsByClassName('ct-spell-caster__casting-action-count--spellcasting')[0];
               spCast.spLvl = spLvl.innerText[0];
-              spCost.innerText = SPELL_COST_TABLE[+spCast.spLvl - 1][1];
+              let newSpellCost = SPELL_COST_TABLE[+spCast.spLvl - 1][1];
+              spCostEl.innerText = newSpellCost;
+              spCostEl.disabled = newSpellCost > this._player.remainingPoints();
             }, 10);
           });
         });
@@ -594,6 +654,13 @@
 
     _registerActionTabListeners(evt) {
       setTimeout(() => {
+        [...document.querySelectorAll('.ct-feature-snippet .ct-feature-snippet__heading')].forEach(el => {
+          if (el.innerText.includes('Arcane Recovery')) {
+            console.log(el.parentNode.querySelector('.ct-feature-snippet__content'), Math.ceil(this._player.wizardLevels() / 2.0), SPELL_COST_TABLE[Math.min(Math.max(this._player.maxSpellLevel - 1, 0), 4)][1]);
+            const message = `Once per day when you finish a short rest, you can choose to recover up to ${Math.ceil(this._player.wizardLevels() / 2.0) * SPELL_COST_TABLE[Math.min(Math.max(this._player.maxSpellLevel - 1, 0), 4)][1]} spell points.`
+            el.parentNode.querySelector('.ct-feature-snippet__content').innerHTML = message;
+          }
+        });
         [...this._content.querySelectorAll('.ct-actions__content .ddbc-tab-options__header')].forEach(ele => ele.addEventListener('click', this.actionCastClick));
         this.actionCastClick(evt);
       }, 50);
