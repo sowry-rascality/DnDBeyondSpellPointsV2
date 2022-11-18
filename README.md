@@ -43,15 +43,11 @@ As mentioned before, upcasting a spell will adjust the cost accordingly, which i
 ## Notes / Known Issues
 
 * Some things can temporarily break the casting overrides. Known examples are:
-  * Collapsing and expanding the sidebar using its dedicated button will reset it to default display.
-  * Spells added from the Manage Spells button don't work right away.
-  * Opening and closing the spell filter button will break the override.
 * Warlock class/multiclass should be considered unsupported. Some things work okay, but DnDBeyond handles pact magic casting weirdly with buttons.
-* Casting spells (except for 6-9th level) won't show the usual info popup at the bottom, since the default casting is overridden.
-  * Spell slots are still shown and toggleable manually, since hiding them could cause issues if they accidentally get toggled automatically.
+* Spell slots are still shown and toggleable manually, since hiding them could cause issues if they accidentally get toggled automatically.
 * If you have multiple spells of 6/7th level, it will let you cast them both.
   * This is to allow homebrew flexibility, and because limiting it automatically adds complexity. Just keep track yourself if necessary.
-* Long rests are the only rests that automatically reset spell points. Clicking the button resets regardless of whether or not you confirm after.
+* Long rests are the only rests that automatically reset spell points.
 * If you use the included optional feature that combines your sorcery points into your spell points, you'll still see the default sorcery point tracker.
 * Spell(/sorcery) points gained/lost by means other than casting/resting have to be accounted for manually.
 * Spell points and settings are stored in a Custom Action called "Spell Points" on your character sheet, and is created by the userscript.
