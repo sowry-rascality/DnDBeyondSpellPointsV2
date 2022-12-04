@@ -57,4 +57,3 @@ As mentioned before, upcasting a spell will adjust the cost accordingly, which i
   * Things may break for you that I may or may not fix. If it's simple enough or affects me specifically, I'll probably attempt to make it work.
   * Feel free to open up [issue reports](https://github.com/Mwr247/DnDBeyondSpellPointsV2/issues) here. I'll try to look through them if/when I can.
   * Otherwise, if you feel so inclined, feel free to attempt a fix yourself and [Pull Request](https://github.com/Mwr247/DnDBeyondSpellPointsV2/pulls) it back here. I apologize for the horrible code, but again, was intended for specific personal use.
-
