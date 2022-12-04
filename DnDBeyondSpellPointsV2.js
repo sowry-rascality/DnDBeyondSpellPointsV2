@@ -574,7 +574,7 @@
           const level = +el.innerText[0];
           const cost = SPELL_COST_TABLE[level - 1][1];
           const lvl = el.querySelector('.ct-content-group__header-content');
-          const spellDisabled = cost > this._player.points;
+          const spellDisabled = cost > this._player.remainingPoints();
           [...el.getElementsByClassName('ddbc-button')].filter(ele => /CAST$/.test(ele.innerText)).forEach(ele => {
             ele.disabled = spellDisabled
           });
