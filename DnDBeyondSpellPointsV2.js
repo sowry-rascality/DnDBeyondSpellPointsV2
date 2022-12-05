@@ -1,12 +1,13 @@
 // ==UserScript==
 // @name         DnDBeyond Spell Points (v2)
 // @description  Spell point tracker
-// @version      2.0.5
+// @version      2.0.6
 // @author       Sowry, Mwr247
 // @namespace    Mwr247
+// @downloadURL    https://raw.githubusercontent.com/sowry-rascality/DnDBeyondSpellPointsV2/main/DnDBeyondSpellPointsV2.js
 // @updateURL    https://raw.githubusercontent.com/sowry-rascality/DnDBeyondSpellPointsV2/main/DnDBeyondSpellPointsV2.js
 // @homepageURL  https://github.com/sowry-rascality/DnDBeyondSpellPointsV2
-// @include      https://www.dndbeyond.com/*characters/*
+// @match      https://www.dndbeyond.com/*characters/*
 // @run-at       document-idle
 // @grant        none
 // ==/UserScript==
@@ -324,8 +325,12 @@
       return this.setPoints(this.points + cost);
     }
 
-    remainingPoints() {
+    expendedPoints() {
       return Math.max((this.maxPoints - this.points), 0);
+    }
+
+    remainingPoints() {
+      return Math.max(this.points, 0);
     }
 
     wizardLevels() {
@@ -547,7 +552,7 @@
             const level = +el.innerText[0];
             const cost = SPELL_COST_TABLE[level - 1][1];
             const lvl = el.querySelector('.ct-content-group__header-content');
-            const spellDisabled = cost > this._player.points;
+            const spellDisabled = cost > this._player.remainingPoints();
             if (!lvl.spFlag){
               lvl.spFlag = true;
               lvl.innerText += ' (Cost ' + cost + ')';
