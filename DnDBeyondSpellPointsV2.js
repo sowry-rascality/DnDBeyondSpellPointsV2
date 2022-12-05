@@ -4,6 +4,7 @@
 // @version      2.0.4
 // @author       Sowry, Mwr247
 // @namespace    Mwr247
+// @updateURL    https://raw.githubusercontent.com/sowry-rascality/DnDBeyondSpellPointsV2/main/DnDBeyondSpellPointsV2.js
 // @homepageURL  https://github.com/sowry-rascality/DnDBeyondSpellPointsV2
 // @include      https://www.dndbeyond.com/*characters/*
 // @run-at       document-idle
