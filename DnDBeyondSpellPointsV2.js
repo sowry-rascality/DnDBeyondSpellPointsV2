@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         DnDBeyond Spell Points (v2)
 // @description  Spell point tracker
-// @version      2.0.4
+// @version      2.0.5
 // @author       Sowry, Mwr247
 // @namespace    Mwr247
 // @updateURL    https://raw.githubusercontent.com/sowry-rascality/DnDBeyondSpellPointsV2/main/DnDBeyondSpellPointsV2.js
