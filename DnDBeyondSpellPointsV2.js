@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         DnDBeyond Spell Points (v2)
 // @description  Spell point tracker
-// @version      2.0.6
+// @version      2.1.0
 // @author       Sowry, Mwr247
 // @namespace    Mwr247
 // @downloadURL    https://raw.githubusercontent.com/sowry-rascality/DnDBeyondSpellPointsV2/main/DnDBeyondSpellPointsV2.js
@@ -455,8 +455,17 @@
 
     _registerListeners() {
       if (this.platform === "desktop") {
-        this._content.getElementsByClassName('ct-primary-box__tab--spells')[0].addEventListener('click', () => this._registerSpellTabListeners());
-        this._content.getElementsByClassName('ct-primary-box__tab--actions')[0].addEventListener('click', () => this._registerActionTabListeners());
+        let menu = document.querySelector('.ct-primary-box menu');
+        let buttons = menu.querySelectorAll('button');
+        for (let i = 0; i < buttons.length; i++) {
+          const button = buttons[i];
+          const innerText = button.innerText;
+          if (innerText == "ACTIONS") {
+            button.addEventListener('click', () => this._registerActionTabListeners());
+          } else if (innerText == "SPELLS") {
+            button.addEventListener('click', () => this._registerSpellTabListeners());
+          }
+        }
         this._registerActionTabListeners();
       } else if (this.platform === "tablet" || this.platform === "mobile") {
         const activePage = this._content.querySelector('.ct-component-carousel__active');
@@ -495,8 +504,9 @@
                 if (currentState) {
                   this._updateSidePanel();
                   // Create observer for inner panel content.
-                  let sidebarPane = document.querySelector('.ct-sidebar .ct-sidebar__pane');
-                  if (sidebarPane) {
+                  // let sidebarPane = document.querySelector('.ct-sidebar .ct-spell-pane');
+                  let innerContent = document.querySelector("[class^='styles_content']");
+                  if (innerContent) {
                     const selectedSpellObserver = new MutationObserver(mutations => {
                       mutations.forEach((mutation) => {
                         const { target } = mutation;
@@ -510,7 +520,7 @@
                         }
                       });
                     });
-                    selectedSpellObserver.observe(sidebarPane, {
+                    selectedSpellObserver.observe(innerContent, {
                       childList: true,
                       subtree: true
                     });
@@ -538,7 +548,6 @@
       const cost = SPELL_COST_TABLE[level - 1][1];
       return evt => {
         if (this.spendPoints(cost)){
-          console.log('cast level', level, 'spell with', cost, 'points');
           spellCastNotification.notifyCastSpell(name, level, cost);
         }
         if (!SPELL_COST_TABLE[level - 1][2]) {evt.stopPropagation();}
@@ -561,7 +570,7 @@
             // only assign listeners once.
             elements.filter(ele => !ele.evtFlag).forEach(ele => {
               ele.evtFlag = true;
-              let spellName = ele.parentNode.parentNode.querySelector('.ddbc-spell-name').innerHTML;
+              let spellName = ele.parentNode.parentNode.querySelector('.ct-spells-spell__label').innerHTML;
               ele.addEventListener('click', this.cast(spellName, level));
             });
             // setup the state of all buttons
@@ -607,11 +616,12 @@
         const spCost = spDetail.getElementsByClassName('ct-spell-caster__casting-action-count--spellcasting')[0];
         spCast.spLvl = spLvl.innerText[0];
         let spellCost = SPELL_COST_TABLE[+spCast.spLvl - 1][1];
-        const spellName = document.querySelector('.ct-spell-pane .ddbc-spell-name').innerHTML;
+        const spellName = document.querySelector('.ct-spell-pane .ct-sidebar__heading').innerText;
         spCost.innerText = spellCost;
         spCast.disabled = spellCost > this._player.remainingPoints();
-        if (spCast.innerHTML.includes('Spell Points')) return; // Assume we have already assigned a listener.
+        // if (spCast.innerHTML.includes('Spell Points')) return; // Assume we have already assigned a listener.
         spCast.innerHTML = spCast.innerHTML.replace('Spell Slot', 'Spell Points');
+        // spCast.removeEventListener('click', )
         spCast.addEventListener('click', evt => this.cast(spellName, +spCast.spLvl)(evt));
         [...spDetail.getElementsByClassName('ct-spell-caster__casting-level-action')].forEach(ele => {
           ele.addEventListener('click', evt => {
@@ -830,6 +840,7 @@
     constructor(player) {
       this._player = player;
       this.read = this.read.bind(this);
+      window.SpellPoints = this;
     }
 
     read() {
@@ -866,7 +877,9 @@
   const reader = new SpellPoints__PageReader(player);
 
   const init = () => {
-    player.loadCharacter().then(() => reader.read());
+    player.loadCharacter().then(() =>  {
+      reader.read()
+    });
   };
 
   let initializer = null;
@@ -874,7 +887,7 @@
   const obs = new MutationObserver(mut => {
     if (location.href !== prevUrl) {
       prevUrl = location.href;
-      let delay = 1000;
+      let delay = 2000;
       if (/\/builder/.test(window.location.pathname) && player.system().loaded === 0) {
         delay = 0;
       }
