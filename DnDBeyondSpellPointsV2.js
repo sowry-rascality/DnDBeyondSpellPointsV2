@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         DnDBeyond Spell Points (v2)
 // @description  Spell point tracker
-// @version      2.1.0
+// @version      2.2.0
 // @author       Sowry, Mwr247
 // @namespace    Mwr247
 // @downloadURL    https://raw.githubusercontent.com/sowry-rascality/DnDBeyondSpellPointsV2/main/DnDBeyondSpellPointsV2.js
@@ -185,6 +185,12 @@
     [8,11,true],
     [9,13,true]
   ];
+
+  const hasClassWith = (classList, name) => {
+    let visible = false;
+    classList.forEach((classStr) => visible = visible || classStr.includes(name));
+    return visible;
+  }
 
   class SpellPoints__Session {
     token = null;
@@ -490,15 +496,16 @@
     }
 
     _sidebarObserver() {
+      let visibleClassName = 'styles_visible';
       let sidebar = document.querySelector('.ct-sidebar');
-      let prevState = sidebar.classList.contains('ct-sidebar--visible');
+      let prevState = hasClassWith(sidebar.classList, visibleClassName);
 
       // Observe Toggle/Show/Hide.
       const mutationObserver = new MutationObserver(mutations => {
         mutations.forEach((mutation) => {
           const { target } = mutation;
           if (mutation.attributeName === 'class') {
-            const currentState = mutation.target.classList.contains('ct-sidebar--visible');
+            const currentState = hasClassWith(mutation.target.classList, visibleClassName);
             if (prevState !== currentState) {
                 prevState = currentState;
                 if (currentState) {
